@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs').promises;
 const path = require('path');
 const commander = require('commander');
+const superagent = require('superagent');
 
 commander
     .option('-h, --host <host>', 'адреса сервера', 'localhost')
@@ -31,8 +32,15 @@ server.on('request', async (req, res) => {
             res.writeHead(200, { 'Content-Type': 'image/jpeg' });
             res.end(data);
         } catch (error) {
-            res.writeHead(404, 'Not Found');
-            res.end('Not Found');
+            try {
+                const response = await superagent.get(`https://http.cat/${code}`);
+                await fs.writeFile(path.join(cache, `${code}.jpg`), response.body);
+                res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+                res.end(response.body);
+            } catch (err) {
+                res.writeHead(404, 'Not Found');
+                res.end('Not Found');
+            }
         }
     } else if (req.method === 'PUT') {
         const data = [];
