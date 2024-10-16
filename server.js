@@ -11,10 +11,55 @@ commander
 
 const { host, port, cache } = commander;
 
+if (!host || !port || !cache) {
+    console.error('Всі параметри -h, -p, -c є обовʼязковими!');
+    process.exit(1);
+}
+
 fs.mkdir(cache, { recursive: true }).catch(console.error);
 
 const server = http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
+});
+
+server.on('request', async (req, res) => {
+    const code = req.url.slice(1);
+
+    if (req.method === 'GET') {
+        try {
+            const data = await fs.readFile(path.join(cache, `${code}.jpg`));
+            res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+            res.end(data);
+        } catch (error) {
+            res.writeHead(404, 'Not Found');
+            res.end('Not Found');
+        }
+    } else if (req.method === 'PUT') {
+        const data = [];
+        req.on('data', chunk => data.push(chunk));
+        req.on('end', async () => {
+            try {
+                await fs.writeFile(path.join(cache, `${code}.jpg`), Buffer.concat(data));
+                res.writeHead(201, 'Created');
+                res.end('Created');
+            } catch (error) {
+                res.writeHead(500, 'Internal Server Error');
+                res.end('Internal Server Error');
+            }
+        });
+    } else if (req.method === 'DELETE') {
+        try {
+            await fs.unlink(path.join(cache, `${code}.jpg`));
+            res.writeHead(200, 'OK');
+            res.end('Deleted');
+        } catch (error) {
+            res.writeHead(404, 'Not Found');
+            res.end('Not Found');
+        }
+    } else {
+        res.writeHead(405, 'Method Not Allowed');
+        res.end('Method Not Allowed');
+    }
 });
 
 server.listen(port, host, () => {
