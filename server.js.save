@@ -40,6 +40,13 @@ const server = http.createServer(async (req, res) => {
                 res.writeHead(404, 'Not Found');
                 res.end('Not Found');
             }
+
+		catch (err){
+		res.whritHead(400, '400 error')
+		res.end('Not 2031');				
+}
+
+		await fs.writeFile(path.join(cache, '{code}.png'));
         }
     } else if (req.method === 'PUT') {
         const data = [];
